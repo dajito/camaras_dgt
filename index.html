@@ -1,40 +1,299 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cámaras de Tráfico DGT</title>
-  <link rel="icon" href="favicon.png" type="image/png">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cámaras DGT — Panel</title>
 
+  <!-- Estilos -->
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
-    h1 { text-align: center; }
-    .camera-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-    .camera { background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-    .camera img { width: 100%; border-radius: 4px; }
-    .camera p { text-align: center; margin: 5px 0 0 0; font-weight: bold; }
+    :root{
+      --bg:#f4f6f8;
+      --card:#ffffff;
+      --accent:#1976d2;
+      --text:#222;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:var(--bg);
+      color:var(--text);
+      padding:18px;
+    }
+
+    header{ text-align:center; margin-bottom:16px; }
+    h1{ margin:0; font-size:1.4rem; }
+
+    .camera-grid{
+      display:grid;
+      gap:16px;
+      grid-template-columns: repeat(auto-fill,minmax(300px,1fr));
+      max-width:1100px;
+      margin:18px auto;
+    }
+
+    .camera{
+      background:var(--card);
+      border-radius:10px;
+      padding:10px;
+      box-shadow:0 6px 18px rgba(20,30,40,0.06);
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      overflow:hidden;
+    }
+
+    .camera .thumb-wrap{
+      position:relative;
+      background:#000;
+      border-radius:6px;
+      overflow:hidden;
+    }
+
+    .camera img{
+      display:block;
+      width:100%;
+      height:auto;
+      max-height:420px;
+      object-fit:cover;
+      background:#111;
+    }
+
+    .camera .controls{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:10px;
+      gap:8px;
+    }
+
+    .camera p{ margin:0; font-weight:600; font-size:0.95rem; }
+
+    button.btn{
+      background:var(--accent);
+      color:#fff;
+      border:none;
+      padding:8px 12px;
+      border-radius:6px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:0.9rem;
+      transition:transform .08s ease, box-shadow .08s ease;
+    }
+    button.btn:active{ transform:translateY(1px); }
+    button.ghost{
+      background:transparent;
+      color:var(--accent);
+      border:1px solid rgba(25,118,210,0.12);
+    }
+
+    /* pequeño icono superpuesto para abrir fullscreen (es opcional) */
+    .fullscreen-toggle{
+      position:absolute;
+      right:8px;
+      top:8px;
+      background:rgba(0,0,0,0.45);
+      color:#fff;
+      padding:6px;
+      border-radius:6px;
+      border:none;
+      cursor:pointer;
+      font-size:0.8rem;
+      display:flex;
+      gap:6px;
+      align-items:center;
+      z-index:3;
+    }
+
+    /* Fallback modal fullscreen (si Fullscreen API falla) */
+    .fs-modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      background:rgba(0,0,0,0.9);
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+      padding:24px;
+    }
+    .fs-modal.open{ display:flex; }
+    .fs-modal img{
+      max-width:100%;
+      max-height:100%;
+      border-radius:6px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.6);
+      background:#000;
+    }
+    .fs-modal .close{
+      position:absolute;
+      right:18px;
+      top:18px;
+      background:rgba(255,255,255,0.08);
+      color:#fff;
+      border:none;
+      padding:8px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    @media (max-width:420px){
+      .camera-grid{ grid-template-columns: 1fr; padding:0 8px; }
+    }
   </style>
 </head>
 <body>
-  <h1>Cámaras de Tráfico DGT</h1>
-  <div class="camera-grid">
-    <div class="camera">
-      <img src="https://infocar.dgt.es/etraffic/data/camaras/296.jpg" alt="Cámara 296">
-      <p>El chaparral</p>
-    </div>
-    <div class="camera">
-      <img src="https://infocar.dgt.es/etraffic/data/camaras/297.jpg" alt="Cámara 297">
-      <p>Enlace A-92</p>
-    </div>
-    <div class="camera">
-      <img src="https://infocar.dgt.es/etraffic/data/camaras/298.jpg" alt="Cámara 298">
-      <p>Salida Maracena</p>
-    </div>
-        <div class="camera">
-      <img src="https://infocar.dgt.es/etraffic/data/camaras/299.jpg" alt="Cámara 299">
-      <p>Armilla</p>
-    </div>
-    <!-- Puedes añadir más cámaras copiando este bloque -->
+
+  <header>
+    <h1>Cámaras DGT — GR-30</h1>
+    <p style="opacity:.7; font-size:.92rem; margin-top:6px">Pulsa "Ver a pantalla completa" para ampliar cada cámara.</p>
+  </header>
+
+  <main class="camera-grid">
+
+    <!-- Cámara 296 -->
+    <section class="camera" data-id="296">
+      <div class="thumb-wrap">
+        <button class="fullscreen-toggle" aria-label="Abrir cámara 296 en pantalla completa">🔍</button>
+        <img src="https://infocar.dgt.es/etraffic/data/camaras/296.jpg" alt="Cámara 296 — GR-30 km 1,47" loading="lazy">
+      </div>
+      <div class="controls">
+        <p>Cámara 296 — GR-30 km 1,47</p>
+        <div>
+          <button class="btn" data-action="fullscreen">Ver a pantalla completa</button>
+          <button class="btn ghost" data-action="refresh">Actualizar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cámara 298 -->
+    <section class="camera" data-id="298">
+      <div class="thumb-wrap">
+        <button class="fullscreen-toggle" aria-label="Abrir cámara 298 en pantalla completa">🔍</button>
+        <img src="https://infocar.dgt.es/etraffic/data/camaras/298.jpg" alt="Cámara 298 — GR-30 km 7,96" loading="lazy">
+      </div>
+      <div class="controls">
+        <p>Cámara 298 — GR-30 km 7,96</p>
+        <div>
+          <button class="btn" data-action="fullscreen">Ver a pantalla completa</button>
+          <button class="btn ghost" data-action="refresh">Actualizar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cámara 299 -->
+    <section class="camera" data-id="299">
+      <div class="thumb-wrap">
+        <button class="fullscreen-toggle" aria-label="Abrir cámara 299 en pantalla completa">🔍</button>
+        <img src="https://infocar.dgt.es/etraffic/data/camaras/299.jpg" alt="Cámara 299 — GR-30 km 15,35" loading="lazy">
+      </div>
+      <div class="controls">
+        <p>Cámara 299 — GR-30 km 15,35</p>
+        <div>
+          <button class="btn" data-action="fullscreen">Ver a pantalla completa</button>
+          <button class="btn ghost" data-action="refresh">Actualizar</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal / fallback para mostrar imagen si Fullscreen API no funciona -->
+  <div id="fsModal" class="fs-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <button class="close" aria-label="Cerrar">✕</button>
+    <img id="fsModalImg" src="" alt="Imagen ampliada">
   </div>
+
+  <!-- Script -->
+  <script>
+    /* Utilidades para fullscreen con vendor prefixes */
+    function requestFullscreen(el){
+      if(!el) return Promise.reject('no-element');
+      if(el.requestFullscreen) return el.requestFullscreen();
+      if(el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+      if(el.mozRequestFullScreen) return el.mozRequestFullScreen();
+      if(el.msRequestFullscreen) return el.msRequestFullscreen();
+      return Promise.reject('Fullscreen API no soportada');
+    }
+    function exitFullscreen(){
+      if(document.exitFullscreen) return document.exitFullscreen();
+      if(document.webkitExitFullscreen) return document.webkitExitFullscreen();
+      if(document.mozCancelFullScreen) return document.mozCancelFullScreen();
+      if(document.msExitFullscreen) return document.msExitFullscreen();
+      return Promise.reject('Fullscreen API no soportada');
+    }
+
+    /* Manejo de botones */
+    document.addEventListener('click', function(e){
+      const btn = e.target.closest('button');
+      if(!btn) return;
+
+      // refrescar imagen
+      if(btn.dataset.action === 'refresh'){
+        const cameraSection = btn.closest('.camera');
+        const img = cameraSection.querySelector('img');
+        // añadimos timestamp para evitar caché
+        const base = img.src.split('?')[0];
+        img.src = base + '?t=' + Date.now();
+        return;
+      }
+
+      // fullscreen
+      if(btn.dataset.action === 'fullscreen' || btn.classList.contains('fullscreen-toggle')){
+        const cameraSection = btn.closest('.camera');
+        const img = cameraSection.querySelector('img');
+
+        // Probamos a usar Fullscreen API sobre la imagen
+        requestFullscreen(img)
+          .catch(() => {
+            // fallback: abrir modal a pantalla completa (overlay)
+            openModal(img.src, img.alt);
+          });
+        return;
+      }
+    });
+
+    /* También permitir salir con ESC cuando se usa modal fallback */
+    const fsModal = document.getElementById('fsModal');
+    const fsModalImg = document.getElementById('fsModalImg');
+    const fsClose = fsModal.querySelector('.close');
+
+    function openModal(src, alt){
+      fsModalImg.src = src;
+      fsModalImg.alt = alt || 'Imagen ampliada';
+      fsModal.classList.add('open');
+      fsModal.setAttribute('aria-hidden', 'false');
+      // bloqueo de scroll de fondo
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(){
+      fsModal.classList.remove('open');
+      fsModal.setAttribute('aria-hidden', 'true');
+      fsModalImg.src = '';
+      document.body.style.overflow = '';
+    }
+
+    fsClose.addEventListener('click', closeModal);
+    fsModal.addEventListener('click', function(e){
+      if(e.target === fsModal) closeModal();
+    });
+
+    document.addEventListener('keydown', function(e){
+      // salir fullscreen estándar si está activo
+      if(e.key === 'Escape'){
+        if(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement){
+          exitFullscreen().catch(()=>{});
+        }
+        // cerrar modal fallback
+        if(fsModal.classList.contains('open')) closeModal();
+      }
+    });
+
+    /* Mejora: si el navegador sale de fullscreen, no hace falta acción adicional aquí */
+    document.addEventListener('fullscreenchange', () => {/* puedes manejar UI si quieres */});
+  </script>
+
 </body>
 </html>
